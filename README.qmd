@@ -4,7 +4,7 @@ format: gfm
 
 # ContextualLasso
 
-Julia implementation of the contextual lasso from the paper 'The contextual lasso: Sparse linear models via deep neural networks'.
+Julia implementation of the contextual lasso from the paper ['The contextual lasso: Sparse linear models via deep neural networks'](https://arxiv.org/abs/2302.00878).
 
 ## Installation
 
@@ -23,7 +23,7 @@ The `classo()` function fits a contextually sparse linear model using explantory
 ```{julia}
 using ContextualLasso, LinearAlgebra, Random, Statistics
 
-Random.seed!(2022)
+Random.seed!(2023)
 
 n = 1000 # Number of samples
 p = 20 # Number of explanatory features

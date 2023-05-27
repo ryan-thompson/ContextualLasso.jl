@@ -1,8 +1,8 @@
-
 # ContextualLasso
 
-Julia implementation of the contextual lasso from the paper ‘The
-contextual lasso: Sparse linear models via deep neural networks’.
+Julia implementation of the contextual lasso from the paper [‘The
+contextual lasso: Sparse linear models via deep neural
+networks’](https://arxiv.org/abs/2302.00878).
 
 ## Installation
 
@@ -21,7 +21,7 @@ explantory features `x`, contextual features `z`, and response `y`.
 ``` julia
 using ContextualLasso, LinearAlgebra, Random, Statistics
 
-Random.seed!(2022)
+Random.seed!(2023)
 
 n = 1000 # Number of samples
 p = 20 # Number of explanatory features
@@ -62,8 +62,8 @@ beta_ls = repeat((inv(x' * x) * x' * y)', n)
 @show norm(beta - beta_ls, 2);
 ```
 
-    norm(beta - beta_classo, 2) = 28.31139922880831
-    norm(beta - beta_ls, 2) = 43.0425159160224
+    norm(beta - beta_classo, 2) = 29.223026527111223
+    norm(beta - beta_ls, 2) = 43.14194491059
 
 ``` julia
 # Compare prediction with least squares estimator
@@ -73,5 +73,5 @@ mu_ls = sum(x .* beta_ls, dims = 2)
 @show norm(mu - mu_ls, 2);
 ```
 
-    norm(mu - mu_classo, 2) = 20.721030111118452
-    norm(mu - mu_ls, 2) = 41.472454429343834
+    norm(mu - mu_classo, 2) = 21.016886249806703
+    norm(mu - mu_ls, 2) = 42.966890160122354
