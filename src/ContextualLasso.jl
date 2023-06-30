@@ -19,11 +19,9 @@ function early_stopping(f, delay; distance = -, init_score = 0, min_dist = 0)
         score = f(args...; kwargs...)
         Δ = distance(best_score, score)
         best_score = Δ < 0 ? best_score : score
-  
         return Δ <= min_dist
       end
     end
-  
     return Flux.patience(trigger, delay)
   end
 
@@ -60,12 +58,12 @@ end
 # Function to (group-wise) project a matrix or vector onto l1-ball
 #==================================================================================================#
 
-function project(beta, lambda, group_info; return_theta = false)
+function project(beta, lambda, group_info)
 
     if isnothing(group_info)
 
         # If no grouping, directly project individual betas 
-        project_l1(beta, lambda, return_theta)
+        project_l1(beta, lambda)
 
     else
         
@@ -74,22 +72,18 @@ function project(beta, lambda, group_info; return_theta = false)
         # If grouping, compute group-wise norms ||z||_2
         group_norm = vcat(map(k -> sqrt.(sum(beta[k .== group, :] .^ 2, dims = 1)), groups)...)
 
-        # Return thresholding parameter if required
-        if return_theta
-            return project_l1(group_norm, lambda, return_theta)
-        end
-
         # Threshold group-wise norms and rescale P(||βₖ||,λ) / ||βₖ||_2
-        group_norm_thresh = project_l1(group_norm, lambda, return_theta) ./ 
+        group_norm_thresh, theta = project_l1(group_norm, lambda) ./ 
             (group_norm .+ eps(eltype(group_norm)))
         
         # Multiply above by βₖ
-        vcat(map(k -> beta[k .== group, :] .* group_norm_thresh[k .== groups, :], groups)...)
+        vcat(map(k -> beta[k .== group, :] .* group_norm_thresh[k .== groups, :], groups)...), theta
+
     end
 
 end
 
-function project_l1(beta, lambda, return_theta)
+function project_l1(beta, lambda)
 
     # Check which device beta exists on
     if isa(beta, Matrix)
@@ -104,17 +98,9 @@ function project_l1(beta, lambda, return_theta)
 
     # If already in l1 ball or lambda=0 then exit early
     if sum(abs.(beta)) <= nlambda
-        if !return_theta
-            return beta
-        else
-            return 0
-        end
+        return beta, 0
     elseif isapprox(lambda, zero(lambda), atol = sqrt(eps(lambda)))
-        if !return_theta
-            return device(zeros(dims))
-        else
-            return Inf # maximum(abs.(beta))
-        end
+        return zero(beta), Inf
     end
 
     # Flatten to vector
@@ -135,17 +121,12 @@ function project_l1(beta, lambda, return_theta)
     # lm = max_j * (csum[max_j] - nlambda) / max_j # Does not work on GPU
     theta = (sum(beta_sort[1:max_j]) - nlambda) / max_j
 
-    # Return thresholding parameter if required
-    if return_theta
-        return theta
-    end
-
     # Threshold beta
     beta_abs = max.(beta_abs .- theta, 0)
     beta = beta_abs .* sign.(beta)
 
     # Return to original shape
-    reshape(beta, dims)
+    reshape(beta, dims), theta
 
 end
 
@@ -214,6 +195,8 @@ function train(model, lambda, x, z, y, x_val, z_val, y_val, loss, intercept, gro
     optim = optimiser()
     optim_state = Flux.setup(optim, model)
 
+    theta = Ref(0.0)
+
     # Create objective function
     function objective(model, x, z, y, par, group_info; agg = Statistics.mean, inference = false)
         beta = model(z)
@@ -221,7 +204,7 @@ function train(model, lambda, x, z, y, x_val, z_val, y_val, loss, intercept, gro
         if inference
             beta_int = threshold(beta_int, par, group_info)
         else
-            beta_int = project(beta_int, par, group_info)
+            beta_int, theta[] = project(beta_int, par, group_info)
         end
         y_hat = sum(x .* beta_int, dims = 1)
         if intercept
@@ -231,15 +214,14 @@ function train(model, lambda, x, z, y, x_val, z_val, y_val, loss, intercept, gro
     end
 
     # Initialise variables
-    theta = project(model(z)[1 + intercept:end, :], lambda, group_info, return_theta = true)
     train_loss = objective(model, x, z, y, lambda, group_info)
-    val_loss = objective(model, x_val, z_val, y_val, theta, group_info, inference = true)
+    val_loss = objective(model, x_val, z_val, y_val, theta[], group_info, inference = true)
     epochs = 0
 
     # Set convergence criterion
     if early_stop
         model_best = deepcopy(model)
-        theta_best = theta
+        theta_best = theta[]
         train_loss_best = train_loss
         val_loss_best = val_loss
         epochs_best = 0
@@ -251,14 +233,11 @@ function train(model, lambda, x, z, y, x_val, z_val, y_val, loss, intercept, gro
     # Run optimisation
     for epoch in 1:epoch_max
 
-        # Update soft thresholding parameter
-        theta = project(model(z)[1 + intercept:end, :], lambda, group_info, return_theta = true)
-
-        # Record validation loss
-        val_loss = objective(model, x_val, z_val, y_val, theta, group_info, inference = true)
-
         # Record training loss and gradients
         train_loss, grad = Flux.withgradient(objective, model, x, z, y, lambda, group_info)
+
+        # Record validation loss
+        val_loss = objective(model, x_val, z_val, y_val, theta[], group_info, inference = true)
         
         # Print status update
         if verbose && epoch % verbose_freq == 0
@@ -269,7 +248,7 @@ function train(model, lambda, x, z, y, x_val, z_val, y_val, loss, intercept, gro
         # Check for improvement
         if early_stop && val_loss < val_loss_best
             model_best = deepcopy(model)
-            theta_best = theta
+            theta_best = theta[]
             train_loss_best = train_loss
             val_loss_best = val_loss
             epochs_best = epochs
@@ -297,6 +276,8 @@ function train(model, lambda, x, z, y, x_val, z_val, y_val, loss, intercept, gro
         train_loss = train_loss_best
         val_loss = val_loss_best
         epochs = epochs_best
+    else
+        theta = theta[]
     end
 
     # Compute validation standard errors and sparsity levels for plotting
@@ -609,7 +590,7 @@ function classo(x::Matrix{<:Real}, z::Matrix{<:Real}, y::Vector{<:Real}, x_val::
     val_loss_relax = Matrix{Float32}(undef, lambda_n, gamma_n)
     val_loss_se_relax = Matrix{Float32}(undef, lambda_n, gamma_n)
 
-    # Loop over lambbda values
+    # Loop over lambda values
     for i in 1:lambda_n
 
         # Print status update
@@ -722,9 +703,9 @@ function classo(x::Matrix{<:Real}, z::Matrix{<:Real}, y::Vector{<:Real}, x_val::
 
     # Set type to ContextualLassoFit
     ContextualLassoFit(model, model_polish, lambda, gamma, intercept, group_info, relax, lambda_min, 
-    gamma_min, lambda_1se, gamma_1se, theta, x_mean, x_sd, z_mean, z_sd, y_mean, y_sd, train_loss, 
-    val_loss, val_loss_se, val_nonzero, epochs, train_loss_polish, val_loss_polish, epochs_polish, 
-    val_loss_relax, val_loss_se_relax)
+        gamma_min, lambda_1se, gamma_1se, theta, x_mean, x_sd, z_mean, z_sd, y_mean, y_sd, 
+        train_loss, val_loss, val_loss_se, val_nonzero, epochs, train_loss_polish, val_loss_polish, 
+        epochs_polish, val_loss_relax, val_loss_se_relax)
 
 end
 
