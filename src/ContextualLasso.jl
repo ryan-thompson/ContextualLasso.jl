@@ -569,6 +569,7 @@ function classo(x::Matrix{<:Real}, z::Matrix{<:Real}, y::Vector{<:Real}, x_val::
         if !isa(lambda, Vector)
             lambda = [lambda]
         end
+        lambda = Float32.(lambda)
     end
     if !isa(gamma, Vector)
         gamma = [gamma]
