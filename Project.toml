@@ -1,9 +1,10 @@
 name = "ContextualLasso"
 uuid = "a525a995-9775-4c2e-a8d9-8157cb575aa3"
 authors = ["Ryan Thompson"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 Gadfly = "c91e804a-d5a3-530f-b6f0-dfbca275c004"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"

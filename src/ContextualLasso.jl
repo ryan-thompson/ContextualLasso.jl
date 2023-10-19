@@ -5,7 +5,7 @@
 
 module ContextualLasso
 
-import Flux, Gadfly, Printf, Statistics
+import CUDA, Flux, Gadfly, Printf, Statistics
 
 export classo, coef, predict, plot
 
