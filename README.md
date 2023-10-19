@@ -16,7 +16,7 @@ Pkg.add(url = "https://github.com/ryan-thompson/ContextualLasso.jl")
 ## Usage
 
 The `classo()` function fits a contextually sparse linear model using
-explantory features `x`, contextual features `z`, and response `y`.
+explanatory features `x`, contextual features `z`, and response `y`.
 
 ``` julia
 using ContextualLasso, LinearAlgebra, Random, Statistics
@@ -62,7 +62,7 @@ beta_ls = repeat((inv(x' * x) * x' * y)', n)
 @show norm(beta - beta_ls, 2);
 ```
 
-    norm(beta - beta_classo, 2) = 29.223026527111223
+    norm(beta - beta_classo, 2) = 28.635592990815503
     norm(beta - beta_ls, 2) = 43.14194491059
 
 ``` julia
@@ -73,5 +73,5 @@ mu_ls = sum(x .* beta_ls, dims = 2)
 @show norm(mu - mu_ls, 2);
 ```
 
-    norm(mu - mu_classo, 2) = 21.016886249806703
+    norm(mu - mu_classo, 2) = 21.075092723548956
     norm(mu - mu_ls, 2) = 42.966890160122354

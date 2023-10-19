@@ -18,7 +18,7 @@ Pkg.add(url = "https://github.com/ryan-thompson/ContextualLasso.jl")
 
 ## Usage
 
-The `classo()` function fits a contextually sparse linear model using explantory features `x`, contextual features `z`, and response `y`.
+The `classo()` function fits a contextually sparse linear model using explanatory features `x`, contextual features `z`, and response `y`.
 
 ```{julia}
 using ContextualLasso, LinearAlgebra, Random, Statistics

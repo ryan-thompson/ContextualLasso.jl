@@ -454,7 +454,7 @@ produces a network with two hidden dense layers of 128 neurons each.
 - `dropout = 0`: the dropout rate; a dropout layer is included after each dense layer; if \
 `0` no dropout layers are included.
 - `initialise = "warm"`: how to initialise the optimiser; `"warm"` to warm start the optimiser \
-using the previous solution along the regularisation path or `"cold"`` to cold start the optimiser \
+using the previous solution along the regularisation path or `"cold"` to cold start the optimiser \
 with a random initialisation.
 - `sign_constraint = fill(0, size(x, 2) + intercept)`: a vector of length `size(x, 2) + intercept` \
 with elements 1, -1, or 0 to constrain the signs of coefficients; 1 indicates only a positive sign \
