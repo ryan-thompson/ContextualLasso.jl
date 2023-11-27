@@ -5,7 +5,7 @@
 
 module ContextualLasso
 
-import CUDA, Flux, Gadfly, Printf, Statistics
+import CUDA, Flux, Gadfly, Printf, Statistics, Zygote
 
 export classo, coef, predict, plot
 
@@ -63,7 +63,7 @@ function project(beta, lambda, group_info)
     if isnothing(group_info)
 
         # If no grouping, directly project individual betas 
-        project_l1(beta, lambda)
+        project_l1(beta, lambda = lambda)
 
     else
         
@@ -72,18 +72,18 @@ function project(beta, lambda, group_info)
         # If grouping, compute group-wise norms ||z||_2
         group_norm = vcat(map(k -> sqrt.(sum(beta[k .== group, :] .^ 2, dims = 1)), groups)...)
 
-        # Threshold group-wise norms and rescale P(||βₖ||,λ) / ||βₖ||_2
-        group_norm_thresh, theta = project_l1(group_norm, lambda) ./ 
-            (group_norm .+ eps(eltype(group_norm)))
+        # Threshold group-wise norms
+        group_norm_thresh, theta = project_l1(group_norm, lambda = lambda)
         
-        # Multiply above by βₖ
-        vcat(map(k -> beta[k .== group, :] .* group_norm_thresh[k .== groups, :], groups)...), theta
+        # βₖ * P(||βₖ||,λ) / ||βₖ||_2
+        vcat(map(k -> beta[k .== group, :] .* group_norm_thresh[k .== groups, :] ./ 
+            (group_norm[k .== groups, :] .+ eps(eltype(group_norm))), groups)...), theta
 
     end
 
 end
 
-function project_l1(beta, lambda)
+function project_l1(beta; lambda = lambda)
 
     # Check which device beta exists on
     if isa(beta, Matrix)
@@ -127,6 +127,35 @@ function project_l1(beta, lambda)
 
     # Return to original shape
     reshape(beta, dims), theta
+
+end
+
+# Below gradient is adapted from https://arxiv.org/abs/2310.15627
+function Zygote.rrule(::typeof(project_l1), b̃; lambda)
+
+    # Compute optimal solution
+    b̂, theta = project_l1(b̃, lambda = lambda)
+
+    # Configure vector-Jacobian product (vJp)
+    function b̂_pullback(db̂_tuple)
+        db̂ = db̂_tuple[1]
+        dims = size(db̂)
+        db̂ = vec(db̂)
+        b̂ = vec(b̂)
+        if theta == 0
+            db̃ = db̂
+        elseif theta == Inf
+            db̃ = zero(db̂)
+        else
+            A = b̂ .≠ 0
+            alpha =  1 / sum(A) * sum(sign.(b̂) .* db̂)
+            db̃ =  A .* db̂ .- alpha .* sign.(b̂)
+        end
+        db̃ = reshape(db̃, dims)
+        (Zygote.NoTangent(), db̃, Zygote.NoTangent())
+    end
+
+    (b̂, theta), b̂_pullback
 
 end
 
@@ -198,7 +227,8 @@ function train(model, lambda, x, z, y, x_val, z_val, y_val, loss, intercept, gro
     theta = Ref(0.0)
 
     # Create objective function
-    function objective(model, x, z, y, par, group_info; agg = Statistics.mean, inference = false)
+    function objective(model; x = x, z = z, y = y, par = lambda, group_info = group_info, 
+            agg = Statistics.mean, inference = false)
         beta = model(z)
         beta_int = beta[1 + intercept:end, :]
         if inference
@@ -214,8 +244,9 @@ function train(model, lambda, x, z, y, x_val, z_val, y_val, loss, intercept, gro
     end
 
     # Initialise variables
-    train_loss = objective(model, x, z, y, lambda, group_info)
-    val_loss = objective(model, x_val, z_val, y_val, theta[], group_info, inference = true)
+    train_loss = objective(model)
+    val_loss = objective(model, x = x_val, z = z_val, y = y_val, par = theta[], 
+        group_info = group_info, inference = true)
     epochs = 0
 
     # Set convergence criterion
@@ -234,10 +265,11 @@ function train(model, lambda, x, z, y, x_val, z_val, y_val, loss, intercept, gro
     for epoch in 1:epoch_max
 
         # Record training loss and gradients
-        train_loss, grad = Flux.withgradient(objective, model, x, z, y, lambda, group_info)
+        train_loss, grad = Flux.withgradient(objective, model)
 
         # Record validation loss
-        val_loss = objective(model, x_val, z_val, y_val, theta[], group_info, inference = true)
+        val_loss = objective(model, x = x_val, z = z_val, y = y_val, par = theta[], 
+            group_info = group_info, inference = true)
         
         # Print status update
         if verbose && epoch % verbose_freq == 0
@@ -281,8 +313,9 @@ function train(model, lambda, x, z, y, x_val, z_val, y_val, loss, intercept, gro
     end
 
     # Compute validation standard errors and sparsity levels for plotting
-    val_loss_se = objective(model, x_val, z_val, y_val, theta, group_info, agg = x -> 
-        Statistics.std(x, corrected = false), inference = true) / sqrt(n_val)
+    val_loss_se = objective(model; x = x_val, z = z_val, y = y_val, par = theta, 
+        group_info = group_info, agg = x -> Statistics.std(x, corrected = false), 
+        inference = true) / sqrt(n_val)
     val_nonzero = sum(threshold(model(z_val)[1 + intercept:end, :], theta, group_info) .!= 0) / 
         n_val
 
