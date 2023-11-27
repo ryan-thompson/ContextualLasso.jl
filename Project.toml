@@ -1,7 +1,7 @@
 name = "ContextualLasso"
 uuid = "a525a995-9775-4c2e-a8d9-8157cb575aa3"
 authors = ["Ryan Thompson"]
-version = "0.1.1"
+version = "0.2.0"
 
 [deps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"

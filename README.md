@@ -62,7 +62,7 @@ beta_ls = repeat((inv(x' * x) * x' * y)', n)
 @show norm(beta - beta_ls, 2);
 ```
 
-    norm(beta - beta_classo, 2) = 28.635592990815503
+    norm(beta - beta_classo, 2) = 28.645271552606705
     norm(beta - beta_ls, 2) = 43.14194491059
 
 ``` julia
@@ -73,5 +73,5 @@ mu_ls = sum(x .* beta_ls, dims = 2)
 @show norm(mu - mu_ls, 2);
 ```
 
-    norm(mu - mu_classo, 2) = 21.075092723548956
+    norm(mu - mu_classo, 2) = 20.55503112242641
     norm(mu - mu_ls, 2) = 42.966890160122354
