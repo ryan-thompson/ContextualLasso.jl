@@ -316,7 +316,7 @@ function train(model, lambda, x, z, y, x_val, z_val, y_val, loss, intercept, gro
     val_loss_se = objective(model; x = x_val, z = z_val, y = y_val, par = theta, 
         group_info = group_info, agg = x -> Statistics.std(x, corrected = false), 
         inference = true) / sqrt(n_val)
-    val_nonzero = sum(threshold(model(z_val)[1 + intercept:end, :], theta, group_info) .!= 0) / 
+    val_nonzero = sum(threshold(model(z_val)[1 + intercept:end, :], theta, group_info) .≠ 0) / 
         n_val
 
     model, theta, train_loss, val_loss, val_loss_se, val_nonzero, epochs
@@ -665,8 +665,8 @@ function classo(x::Matrix{<:Real}, z::Matrix{<:Real}, y::Vector{<:Real}, x_val::
         if relax
 
             # Compute masking matrices
-            mask = threshold(model_i(z)[1 + intercept:end, :], theta[i], group_info) .!= 0
-            mask_val = threshold(model_i(z_val)[1 + intercept:end, :], theta[i], group_info) .!= 0
+            mask = threshold(model_i(z)[1 + intercept:end, :], theta[i], group_info) .≠ 0
+            mask_val = threshold(model_i(z_val)[1 + intercept:end, :], theta[i], group_info) .≠ 0
 
             if initialise == "cold" || i == 1
                 model_polish_i = gennet(hidden_layers, sign_constraint, dropout, p + intercept, m, 
@@ -688,7 +688,7 @@ function classo(x::Matrix{<:Real}, z::Matrix{<:Real}, y::Vector{<:Real}, x_val::
             beta = model_i(z_val)
             beta_int = threshold(beta[1 + intercept:end, :], theta[i], group_info)
             beta_polish = model_polish_i(z_val)
-            beta_int_polish = beta_polish[1 + intercept:end, :] .* (beta_int .!= 0)
+            beta_int_polish = beta_polish[1 + intercept:end, :] .* (beta_int .≠ 0)
             for j in 1:gamma_n
                 beta_relax = device(zeros(p + intercept, n_val))
                 beta_relax[1 + intercept:end, :] = (1 - gamma[j]) * beta_int + gamma[j] * 
@@ -822,7 +822,7 @@ function coef(fit::ContextualLassoFit, z::Matrix{<:Real};
         else
             index_gamma = argmin(abs.(fit.gamma .- gamma))
         end
-        beta_polish = permutedims(fit.model_polish[index_lambda](z)) .* (beta .!= 0)
+        beta_polish = permutedims(fit.model_polish[index_lambda](z)) .* (beta .≠ 0)
         unstandardise!(beta_polish)
         (1 - fit.gamma[index_gamma]) * beta + fit.gamma[index_gamma] * beta_polish
     end
