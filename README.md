@@ -1,8 +1,10 @@
+
+
 # ContextualLasso
 
-Julia implementation of the contextual lasso from the paper [‘The
+Julia implementation of the contextual lasso from the paper [“The
 contextual lasso: Sparse linear models via deep neural
-networks’](https://arxiv.org/abs/2302.00878).
+networks”](https://papers.nips.cc/paper_files/paper/2023/hash/3f226824426a4d6ae3d3efad8883fc53-Abstract-Conference.html).
 
 ## Installation
 
@@ -62,7 +64,7 @@ beta_ls = repeat((inv(x' * x) * x' * y)', n)
 @show norm(beta - beta_ls, 2);
 ```
 
-    norm(beta - beta_classo, 2) = 28.645271552606705
+    norm(beta - beta_classo, 2) = 29.40308234990621
     norm(beta - beta_ls, 2) = 43.14194491059
 
 ``` julia
@@ -73,5 +75,5 @@ mu_ls = sum(x .* beta_ls, dims = 2)
 @show norm(mu - mu_ls, 2);
 ```
 
-    norm(mu - mu_classo, 2) = 20.55503112242641
+    norm(mu - mu_classo, 2) = 21.97954571507421
     norm(mu - mu_ls, 2) = 42.966890160122354

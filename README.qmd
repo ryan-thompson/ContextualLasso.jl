@@ -1,10 +1,11 @@
 ---
 format: gfm
+engine: julia
 ---
 
 # ContextualLasso
 
-Julia implementation of the contextual lasso from the paper ['The contextual lasso: Sparse linear models via deep neural networks'](https://arxiv.org/abs/2302.00878).
+Julia implementation of the contextual lasso from the paper ["The contextual lasso: Sparse linear models via deep neural networks"](https://papers.nips.cc/paper_files/paper/2023/hash/3f226824426a4d6ae3d3efad8883fc53-Abstract-Conference.html).
 
 ## Installation
 
