@@ -2,8 +2,8 @@
 
 # ContextualLasso
 
-Julia implementation of the contextual lasso from the paper [“The
-contextual lasso: Sparse linear models via deep neural
+Julia implementation of the contextual lasso from the NeurIPS 2023 paper
+[“The contextual lasso: Sparse linear models via deep neural
 networks”](https://papers.nips.cc/paper_files/paper/2023/hash/3f226824426a4d6ae3d3efad8883fc53-Abstract-Conference.html).
 
 ## Installation
@@ -54,7 +54,11 @@ fit = classo(
 plot(fit) |> display
 ```
 
-![](README_files/figure-commonmark/cell-3-output-1.svg)
+    Precompiling packages...
+       5329.7 ms  ✓ ContextualLasso
+      1 dependency successfully precompiled in 6 seconds. 267 already precompiled.
+
+![](README_files/figure-commonmark/cell-3-output-2.svg)
 
 ``` julia
 # Compare estimation with least squares estimator
@@ -64,8 +68,8 @@ beta_ls = repeat((inv(x' * x) * x' * y)', n)
 @show norm(beta - beta_ls, 2);
 ```
 
-    norm(beta - beta_classo, 2) = 29.40308234990621
-    norm(beta - beta_ls, 2) = 43.14194491059
+    norm(beta - beta_classo, 2) = 27.540692803232165
+    norm(beta - beta_ls, 2) = 43.14208009505998
 
 ``` julia
 # Compare prediction with least squares estimator
@@ -75,5 +79,5 @@ mu_ls = sum(x .* beta_ls, dims = 2)
 @show norm(mu - mu_ls, 2);
 ```
 
-    norm(mu - mu_classo, 2) = 21.97954571507421
-    norm(mu - mu_ls, 2) = 42.966890160122354
+    norm(mu - mu_classo, 2) = 21.209093698838576
+    norm(mu - mu_ls, 2) = 42.966820114253125

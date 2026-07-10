@@ -89,7 +89,7 @@ function project_l1(beta; lambda = lambda)
     if isa(beta, Matrix)
         device = Flux.cpu
     else
-        device = Flux.gpu
+        device = CUDA.cu
     end
 
     # Save input dims
@@ -476,7 +476,7 @@ included.
 active sets without any regularisation.
 - `gamma = collect(range(0, 1, 11))`: a sequence of relaxation paramters; `gamma = 0` yields \
 the original fit with full shrinkage and `gamma = 1` yields the fully relaxed fit with no shrinkage.
-- `device = Flux.gpu`: the device to train on; either `Flux.cpu` for CPU or `Flux.gpu` for GPU.
+- `device = CUDA.cu`: the device to train on; either `Flux.cpu` for CPU or `CUDA.cu` for GPU.
 - `optimiser = Flux.Adam`: an optimiser from Flux to use for training.
 - `epoch_max = 10000`: the maximum number of training epochs.
 - `early_stop = true`: whether to use early stopping; if `true` convergence is monitored on the \
@@ -510,8 +510,8 @@ function classo(x::Matrix{<:Real}, z::Matrix{<:Real}, y::Vector{<:Real}, x_val::
     z_val::Matrix{<:Real}, y_val::Vector{<:Real}; loss::Function = Flux.mse, intercept::Bool = true, 
     group::Union{Vector{<:Int}, Nothing} = nothing, 
     lambda::Union{Real, Vector{<:Real}, Nothing} = nothing, lambda_n::Int = 50, relax::Bool = false, 
-    gamma::Union{Real, Vector{<:Real}} = collect(range(0, 1, 11)), device::Function = Flux.gpu, 
-    optimiser::DataType = Flux.Adam, epoch_max::Int = 10000, early_stop::Bool = true, 
+    gamma::Union{Real, Vector{<:Real}} = collect(range(0, 1, 11)), device::Function = CUDA.cu,
+    optimiser::Type = Flux.Adam, epoch_max::Int = 10000, early_stop::Bool = true,
     patience::Int = 30, hidden_layers::Vector{<:Any} = [128, 128], dropout::Real = 0, 
     initialise::String = "warm", sign_constraint::Vector{<:Int} = fill(0, size(x, 2) + intercept), 
     verbose::Bool = true, verbose_freq::Int = 10, standardise_x::Bool = true, 
