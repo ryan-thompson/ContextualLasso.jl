@@ -251,14 +251,6 @@ git-tree-sha1 = "25cc3803f1030ab855e383129dcd3dc294e322cc"
 uuid = "6add18c4-b38d-439d-96f6-d6bc489c04c5"
 version = "0.1.3"
 
-[[deps.ContextualDAG]]
-deps = ["CUDA", "Flux", "Graphs", "LinearAlgebra", "Printf", "Statistics", "TikzGraphs", "Zygote", "cuDNN"]
-git-tree-sha1 = "833c18b778995d3393291e5db495dfc308cce751"
-repo-rev = "main"
-repo-url = "https://github.com/ryan-thompson/ContextualDAG.jl"
-uuid = "cab09736-673a-4a0d-83a6-1cdd58bdfd72"
-version = "1.0.2"
-
 [[deps.Contour]]
 git-tree-sha1 = "d05d9e7b7aedff4e5b51a029dced05cfb6125781"
 uuid = "d38c429a-6771-53c6-b99e-75d170b6e991"
